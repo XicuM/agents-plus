@@ -1,0 +1,55 @@
+{
+  "global": {
+    "alt-b": "layout.toggle:sidebar",
+    "alt-m": {
+      "command": "app.settings",
+      "args": {
+        "section": "machines"
+      }
+    },
+    "alt-g": "mod.open:picker",
+    "alt-w": "agents-menu.close",
+    "alt-t": "tab.new",
+    "alt-n": "tab.new",
+    "alt-up": "agent.prev",
+    "alt-down": "agent.next"
+  },
+  "terminal": {
+    "alt-k": {
+      "command": "terminal.scroll",
+      "args": {
+        "pages": -1
+      }
+    },
+    "alt-pageup": {
+      "command": "terminal.scroll",
+      "args": {
+        "pages": -1
+      }
+    },
+    "alt-j": {
+      "command": "terminal.scroll",
+      "args": {
+        "pages": 1
+      }
+    },
+    "alt-pagedown": {
+      "command": "terminal.scroll",
+      "args": {
+        "pages": 1
+      }
+    },
+    "alt-home": {
+      "command": "terminal.scroll",
+      "args": {
+        "to": "top"
+      }
+    },
+    "alt-end": {
+      "command": "terminal.scroll",
+      "args": {
+        "to": "bottom"
+      }
+    }
+  }
+}
