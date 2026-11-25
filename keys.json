@@ -8,7 +8,8 @@
       }
     },
     "alt-g": "mod.open:picker",
-    "alt-w": "agents-plus.close",
+    "alt-w": "tab.close",
+    "alt-x": "agents-plus.close",
     "alt-t": "tab.new",
     "alt-n": "tab.new",
     "alt-up": "agent.prev",

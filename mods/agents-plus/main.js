@@ -112,7 +112,7 @@ export default class Agents extends View {
     if (!this.pendingPins.length) localStorage.removeItem("pins");
     this.migratingPins = new Set();
     cx.timer.every(30000, (cx) => cx.notify());
-    // alt+w (keys.json): close the pane, keeping the space (closePane).
+    // alt+x (keys.json): close the pane, keeping the space (closePane).
     cx.spawn(async () => {
       for (;;) if ((await nextCommand()) === "close") closePane();
     });

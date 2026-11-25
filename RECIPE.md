@@ -1,6 +1,6 @@
 # Agents Plus
 
-Herdr's agents list, plus more. Right-click any agent to open, pin, rename or close it, as you can a space. A new **Monitoring** state shows the agents whose turn is over but whose work isn't: Claude Code's background shells, or a command OpenCode left running while it says idle, so they no longer look idle. And herdr-mobile's Alt keys: Alt+↑/↓ steps through agents, Alt+W closes, Alt+J/K scroll.
+Herdr's agents list, plus more. Right-click any agent to open, pin, rename or close it, as you can a space. A new **Monitoring** state shows the agents whose turn is over but whose work isn't: Claude Code's background shells, or a command OpenCode left running while it says idle, so they no longer look idle. And herdr-mobile's Alt keys: Alt+↑/↓ steps through agents, Alt+X closes a pane, Alt+W closes a tab, Alt+J/K scroll.
 
 ![Agents Plus](preview.png)
 
@@ -28,7 +28,8 @@ Herdr's agents list, plus more. Right-click any agent to open, pin, rename or cl
   | Alt+B | `layout.toggle:sidebar` |
   | Alt+M | `app.settings {section: "machines"}` |
   | Alt+G | `mod.open:picker` (the sidebar's search) |
-  | Alt+W | `agents-plus.close`: `pane.close`, keeping the space when it is its last agent pane |
+  | Alt+W | `tab.close` |
+  | Alt+X | `agents-plus.close`: `pane.close`, keeping the space when it is its last agent pane |
   | Alt+T, Alt+N | `tab.new` |
   | Alt+↑ / Alt+↓ | `agent.prev` / `agent.next` |
   | Alt+K, Alt+PageUp / Alt+J, Alt+PageDown | `terminal.scroll {pages: -1 / 1}` (terminal section) |
