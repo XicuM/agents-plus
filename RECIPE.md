@@ -1,8 +1,8 @@
-# Agents menu
+# Smart Agents
 
-Herdr's agents list with a right-click menu on every agent (Open, Pin, Rename tab, Close), like the spaces list has, herdr-mobile's **Monitoring** state for agents waiting on background work, and herdr-mobile's Alt keys: Alt+↑/↓ steps through agents, Alt+W closes, Alt+J/K scroll.
+Herdr's agents list, smarter. Right-click any agent to open, pin, rename or close it, as you can a space. A new **Monitoring** state shows the agents whose turn is over but whose work isn't: Claude Code's background shells, or a command OpenCode left running while it says idle, so they no longer look idle. And herdr-mobile's Alt keys: Alt+↑/↓ steps through agents, Alt+W closes, Alt+J/K scroll.
 
-![Agents menu](preview.png)
+![Smart Agents](preview.png)
 
 ## What you see
 
@@ -15,7 +15,7 @@ Herdr's agents list with a right-click menu on every agent (Open, Pin, Rename ta
 
 ## How it behaves
 
-- **Monitoring** is an agent with work still going that its own status doesn't say: Claude Code's background shells, which herdr-core keeps as a `records` entry still `working` after the agent's turn ends (`done`, `idle` once you look), or an agent herdr-core calls `working` whose report message says something is `still running` (Claude Code's wording while it waits inside a turn). It ranks between working and idle, so a monitoring sub-agent doesn't make its parent look busy. Other agents don't report this and stay working or idle.
+- **Monitoring** is an agent with work still going that its own status doesn't say: Claude Code's background shells, which herdr-core keeps as a `records` entry still `working` after the agent's turn ends (`done`, `idle` once you look), or an agent herdr-core calls `working` whose report message says something is `still running` (Claude Code's wording while it waits inside a turn), or any other agent that says `idle`/`done` while a command it started still runs (OpenCode ends its turn and says only idle). It ranks between working and idle, so a monitoring sub-agent doesn't make its parent look busy. agy and Amp say `working` until their background tasks end, so they show as Working then.
 - **Open** focuses the agent's pane; for a sub-agent without a pane it peeks at it (`terminal.peek`).
 - **Pin** toggles `terminal.pin`, as the row's pin button does.
 - **Rename tab** runs `tab.rename` on the agent's tab; Herdr asks for the name.
@@ -28,7 +28,7 @@ Herdr's agents list with a right-click menu on every agent (Open, Pin, Rename ta
   | Alt+B | `layout.toggle:sidebar` |
   | Alt+M | `app.settings {section: "machines"}` |
   | Alt+G | `mod.open:picker` (the sidebar's search) |
-  | Alt+W | `agents-menu.close`: `pane.close`, keeping the space when it is its last agent pane |
+  | Alt+W | `smart-agents.close`: `pane.close`, keeping the space when it is its last agent pane |
   | Alt+T, Alt+N | `tab.new` |
   | Alt+↑ / Alt+↓ | `agent.prev` / `agent.next` |
   | Alt+K, Alt+PageUp / Alt+J, Alt+PageDown | `terminal.scroll {pages: -1 / 1}` (terminal section) |
@@ -38,29 +38,31 @@ Herdr's agents list with a right-click menu on every agent (Open, Pin, Rename ta
 
 ## Built from
 
-- **One mod**, `mods/agents-menu/`: a clone of Herdr's shipped `agents` mod (`mod.clone {name: "agents", as: "agents-menu"}`, version 0.1.16) with these changes:
-  - `menu(address)` opens itself as a popup: `openOverlay({mod: "agents-menu", kind: "popup", width: 200, height: 160, props: {agentMenu: address}})`, the way the shipped mod opens its sort popup (`props: {sortMenu: true}`).
+- **One mod**, `mods/smart-agents/`: a clone of Herdr's shipped `agents` mod (`mod.clone {name: "agents", as: "smart-agents"}`, version 0.1.16) with these changes:
+  - `menu(address)` opens itself as a popup: `openOverlay({mod: "smart-agents", kind: "popup", width: 200, height: 160, props: {agentMenu: address}})`, the way the shipped mod opens its sort popup (`props: {sortMenu: true}`).
   - `init` returns early for `agentMenu` copies as for `sortMenu`; `render` draws `agentMenu(t)` for them.
   - `.on_mouse_down("right", () => this.menu(address))` on the expanded row, the collapsed row and the sub-agent row.
-  - The sort popup's `openOverlay` names `agents-menu` (done by `mod.clone`).
-  - Monitoring: `RANK.monitoring = 1.5`, `SECTION`/`SECTION_STATUS` entries for `1.5`, and in `render` the `agents()` list mapped to `status: "monitoring"` for addresses whose `terminals()` entry matches (`monitoring(k)`: a `done`/`idle` agent with a `records` entry still `working`, or a `working` one whose `report.msg` matches `/still running/i`); `kidStatus` does the same for sub-agents without a pane. `t` is `{ ...theme(), monitoring: "#89dceb" }`, so `t[status]` colors headers and fold counts; `status()` draws the spinner for it.
+  - The sort popup's `openOverlay` names `smart-agents` (done by `mod.clone`).
+  - Monitoring: `RANK.monitoring = 1.5`, `SECTION`/`SECTION_STATUS` entries for `1.5`, and in `render` the `agents()` list mapped to `status: "monitoring"` for addresses whose `terminals()` entry matches (`monitoring(k)`: a `done`/`idle` agent with a `records` entry still `working`, or a `working` one whose `report.msg` matches `/still running/i`, or a `done`/`idle` one marked `busy`); `kidStatus` does the same for sub-agents without a pane. `t` is `{ ...theme(), monitoring: "#89dceb" }`, so `t[status]` colors headers and fold counts; `status()` draws the spinner for it.
   - In `init`, one `cx.spawn` task loops on `nextCommand()` and handles `"close"` with `closePane()`.
-- **The layout**: the `agents` block of the person's personal layout gets `content: {mod: "agents-menu"}` instead of `agents`. On one of Herdr's own layouts, clone it first (`layout.clone`).
+- **The layout**: the `agents` block of the person's personal layout gets `content: {mod: "smart-agents"}` instead of `agents`. On one of Herdr's own layouts, clone it first (`layout.clone`).
 - **`keys.json`**: the table above, merged into the person's keys.
 
 ## Watch out
 
 - It's a copy of Herdr's `agents` mod: Herdr's later fixes to that mod don't reach it. Rebuild it from this recipe on a newer Herdr (clone again, reapply the changes).
 - The Alt keys take these chords from terminal programs (Alt+B is no longer word-back in the shell; Ctrl+← still is). Alt+↑/↓ replace Herdr's default space switching (Ctrl+Shift+PageUp/PageDown still switch spaces); Alt+J/K in a terminal replace pane focus (Ctrl+Alt+arrows still focus). Ask before replacing keys the person already uses.
-- Monitoring reads Claude Code's own reports: a background shell's `records` entry, or its "still running" wording while working. An agent that doesn't report its background work still shows as working or idle. Space and tab rings and the status bar come from other mods and still say working.
+  - Busy agents (`scanBusy`, every 5 s while the window is visible and some local non-Claude agent is idle or done): herdr-core puts `HC_TERMINAL_ID=<address>` in the environment of everything started from a terminal, so one `grep -a -o -z '^HC_TERMINAL_ID=…' /proc/[0-9]*/environ` maps processes to terminals and one `ps -eo pid=,stat=,args=` names them. A terminal is busy when a non-zombie process with its id runs that isn't its shell or agent (`hc get <t> --json` `pid` and `foreground.pid`, cached until the agent's pid is gone), a helper named after the agent's binary (`opencode-pty`, `codex app-server`), a shell, anything with `mcp` in its command line, a JS runtime (`node`, `npm`, `npx`, `bun`, `deno`) or a language server. `render` marks those `terminals()` entries `busy: true` before `monitoring(k)` reads them.
+- Monitoring reads Claude Code's own reports (a background shell's `records` entry, or its "still running" wording while working) and, for other local agents, their processes. Don't walk the process tree: OpenCode runs commands in one `opencode serve --service` that the first OpenCode started and every later one shares, so a command sits outside its terminal's tree; the environment still names its terminal. A background job run by a JS runtime, or anything an agent left running on purpose (a dev server), counts the same way: a dev server shows as Monitoring until it stops. Agents on other machines aren't scanned. Space and tab rings and the status bar come from other mods and still say working.
 - Close has no undo and no confirmation.
 - Linux-tested (herdr-app 0.1.16); on macOS, Option+letters type characters on many keyboards.
 
 ## Done when
 
-- `herdr-app check mods/agents-menu` passes and `herdr-app status` shows no errors.
+- `herdr-app check mods/smart-agents` passes and `herdr-app status` shows no errors.
 - The agents list looks and sorts as before; its sort popup still works.
 - A Claude Code agent whose turn ended with a background shell still running (`hc get <t>` shows `done` with a `records` entry in state `working`) sits under Monitoring with a sky-blue spinner; it returns to Idle when the shell finishes.
+- An OpenCode agent asked to run `sleep 90` in the background and wait ends its turn (`hc get <t>` says `idle`) and sits under Monitoring within 5 s while `sleep` runs; it returns to Idle within 5 s of `sleep` ending.
 - Right-clicking an agent opens the menu at the pointer; each item does what its label says, and the popup closes.
 - Right-clicking a sub-agent offers Open and Close; Close ends only that sub-agent.
 - Each key in the table does its command; Alt+J/K scroll only while a terminal has focus.

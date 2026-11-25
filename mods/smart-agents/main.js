@@ -2,7 +2,7 @@
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout, nextCommand } from "herdr";
+import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout, nextCommand, exec, hc, checking } from "herdr";
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -65,9 +65,11 @@ const RANK = { blocked: 4, done: 3, working: 2, monitoring: 1.5, idle: 1 };
 // running, and reports that shell as its own 7501 record, still working: the root
 // status alone says idle. While it waits inside a turn it stays "working" and says
 // "1 shell still running" instead. Either way, shown apart as monitoring.
+// Other agents (OpenCode) say only idle while a command they started runs on:
+// `busy` marks those, from their processes (scanBusy).
 const monitoring = (k) => {
   if (k.status === "done" || k.status === "idle")
-    return Object.values(k.records ?? {}).some((r) => r?.state === "working");
+    return k.busy || Object.values(k.records ?? {}).some((r) => r?.state === "working");
   return k.status === "working" && /still running/i.test(k.report?.msg ?? k.report?.message ?? "");
 };
 // A sub-agent without a pane isn't in agents(): its raw word, error counting as
@@ -113,6 +115,59 @@ export default class Agents extends View {
     // alt+w (keys.json): close the pane, keeping the space (closePane).
     cx.spawn(async () => {
       for (;;) if ((await nextCommand()) === "close") closePane();
+    });
+    this.busy = new Set();
+    this.agentOf = new Map();
+    if (!checking()) cx.timer.every(5000, (cx) => this.scanBusy(cx));
+  }
+
+  // OpenCode ends its turn, saying idle, while a command it started runs on in a
+  // service every OpenCode shares, outside the terminal's process tree. herdr-core
+  // gives each process started from a terminal its HC_TERMINAL_ID, so an idle or done
+  // agent (not Claude Code, which reports its own) is busy while a process with its id
+  // runs that isn't the agent, its own helpers (opencode-pty, codex app-server), a
+  // shell, an MCP or language server or a JS runtime. Local terminals only.
+  scanBusy(cx) {
+    if (this.scanning || window()?.visible === false) return;
+    const quiet = terminals().filter((k) => (k.status === "idle" || k.status === "done") && k.program?.key !== "claude" && !k.address.includes("/"));
+    if (!quiet.length && !this.busy.size) return;
+    this.scanning = true;
+    cx.spawn(async (cx) => {
+      const found = new Set();
+      try {
+        const owner = new Map();
+        const procs = new Map();
+        if (quiet.length) {
+          const env = await exec("sh", ["-c", "grep -a -o -z '^HC_TERMINAL_ID=[^[:space:]]*' /proc/[0-9]*/environ 2>/dev/null | tr '\\0' '\\n'"]);
+          for (const m of env.stdout.matchAll(/^\/proc\/(\d+)\/environ:HC_TERMINAL_ID=(\S+)$/gm)) owner.set(+m[1], m[2]);
+          for (const m of (await exec("ps", ["-eo", "pid=,stat=,args="])).stdout.matchAll(/^\s*(\d+)\s+(\S+)\s+(.*)$/gm)) procs.set(+m[1], { stat: m[2], args: m[3] });
+        }
+        for (const k of quiet) {
+          let agent = this.agentOf.get(k.address);
+          if (!agent || !procs.has(agent.fg)) {
+            try {
+              const d = JSON.parse((await hc(["get", k.address, "--json"])).stdout);
+              agent = { shell: d.pid, fg: d.foreground?.pid, stem: (d.foreground?.name ?? "").toLowerCase().replace(/\.exe$/, "") };
+              this.agentOf.set(k.address, agent);
+            } catch { continue; }
+          }
+          for (const [pid, id] of owner) {
+            const p = procs.get(pid);
+            if (id !== k.address || !p || pid === agent.shell || pid === agent.fg || p.stat.startsWith("Z")) continue;
+            const base = p.args.split(" ")[0].split("/").pop().toLowerCase();
+            const helper = (agent.stem && base.startsWith(agent.stem)) || /mcp/i.test(p.args)
+              || /^(node|npm|npx|bun|deno|bash|zsh|sh|fish|clangd|gopls|rust-analyzer|pylsp|jdtls|zls)$/.test(base)
+              || /-(language-server|langserver|lsp|ls)$/.test(base);
+            if (!helper) { found.add(k.address); break; }
+          }
+        }
+      } finally {
+        this.scanning = false;
+      }
+      if ([...found].join() !== [...this.busy].join()) {
+        this.busy = found;
+        cx.notify();
+      }
     });
   }
 
@@ -189,7 +244,7 @@ export default class Agents extends View {
 
   // Right-click on an agent: like the spaces menu. Close ends the agent's pane, or a sub-agent's terminal.
   menu(address) {
-    openOverlay({ mod: "agents-menu", kind: "popup", width: 200, height: 160, props: { agentMenu: address } });
+    openOverlay({ mod: "smart-agents", kind: "popup", width: 200, height: 160, props: { agentMenu: address } });
   }
 
   agentMenu(t) {
@@ -289,7 +344,7 @@ export default class Agents extends View {
     if (props()?.agentMenu) return this.agentMenu(t);
     const collapsed = narrow();
     const sort = sortOf();
-    const all = terminals();
+    const all = terminals().map((k) => (this.busy?.has(k.address) ? { ...k, busy: true } : k));
     const mon = new Set(all.filter(monitoring).map((k) => k.address));
     let list = agents().map((a) => (mon.has(a.address) ? { ...a, status: "monitoring" } : a));
     this.listed = new Map(list.map((a) => [a.address, a.status]));
@@ -506,7 +561,7 @@ export default class Agents extends View {
                 .text_size(11)
                 .text_color(t.dim)
                 .hover((s) => s.text_color(t.foreground))
-                .on_click(() => openOverlay({ mod: "agents-menu", kind: "popup", width: 200, height: 140, props: { sortMenu: true } }))
+                .on_click(() => openOverlay({ mod: "smart-agents", kind: "popup", width: 200, height: 140, props: { sortMenu: true } }))
                 .tooltip(`Sort agents: ${sort.label}`)
                 .child(svg(`mods/workspace-chrome/${sort.icon}.svg`).size(14)),
             ),

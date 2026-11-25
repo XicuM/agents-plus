@@ -8,7 +8,7 @@
       }
     },
     "alt-g": "mod.open:picker",
-    "alt-w": "agents-menu.close",
+    "alt-w": "smart-agents.close",
     "alt-t": "tab.new",
     "alt-n": "tab.new",
     "alt-up": "agent.prev",
