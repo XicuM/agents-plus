@@ -1,8 +1,8 @@
-# Smart Agents
+# Agents Plus
 
-Herdr's agents list, smarter. Right-click any agent to open, pin, rename or close it, as you can a space. A new **Monitoring** state shows the agents whose turn is over but whose work isn't: Claude Code's background shells, or a command OpenCode left running while it says idle, so they no longer look idle. And herdr-mobile's Alt keys: Alt+↑/↓ steps through agents, Alt+W closes, Alt+J/K scroll.
+Herdr's agents list, plus more. Right-click any agent to open, pin, rename or close it, as you can a space. A new **Monitoring** state shows the agents whose turn is over but whose work isn't: Claude Code's background shells, or a command OpenCode left running while it says idle, so they no longer look idle. And herdr-mobile's Alt keys: Alt+↑/↓ steps through agents, Alt+W closes, Alt+J/K scroll.
 
-![Smart Agents](preview.png)
+![Agents Plus](preview.png)
 
 ## What you see
 
@@ -28,7 +28,7 @@ Herdr's agents list, smarter. Right-click any agent to open, pin, rename or clos
   | Alt+B | `layout.toggle:sidebar` |
   | Alt+M | `app.settings {section: "machines"}` |
   | Alt+G | `mod.open:picker` (the sidebar's search) |
-  | Alt+W | `smart-agents.close`: `pane.close`, keeping the space when it is its last agent pane |
+  | Alt+W | `agents-plus.close`: `pane.close`, keeping the space when it is its last agent pane |
   | Alt+T, Alt+N | `tab.new` |
   | Alt+↑ / Alt+↓ | `agent.prev` / `agent.next` |
   | Alt+K, Alt+PageUp / Alt+J, Alt+PageDown | `terminal.scroll {pages: -1 / 1}` (terminal section) |
@@ -38,14 +38,14 @@ Herdr's agents list, smarter. Right-click any agent to open, pin, rename or clos
 
 ## Built from
 
-- **One mod**, `mods/smart-agents/`: a clone of Herdr's shipped `agents` mod (`mod.clone {name: "agents", as: "smart-agents"}`, version 0.1.16) with these changes:
-  - `menu(address)` opens itself as a popup: `openOverlay({mod: "smart-agents", kind: "popup", width: 200, height: 160, props: {agentMenu: address}})`, the way the shipped mod opens its sort popup (`props: {sortMenu: true}`).
+- **One mod**, `mods/agents-plus/`: a clone of Herdr's shipped `agents` mod (`mod.clone {name: "agents", as: "agents-plus"}`, version 0.1.16) with these changes:
+  - `menu(address)` opens itself as a popup: `openOverlay({mod: "agents-plus", kind: "popup", width: 200, height: 160, props: {agentMenu: address}})`, the way the shipped mod opens its sort popup (`props: {sortMenu: true}`).
   - `init` returns early for `agentMenu` copies as for `sortMenu`; `render` draws `agentMenu(t)` for them.
   - `.on_mouse_down("right", () => this.menu(address))` on the expanded row, the collapsed row and the sub-agent row.
-  - The sort popup's `openOverlay` names `smart-agents` (done by `mod.clone`).
+  - The sort popup's `openOverlay` names `agents-plus` (done by `mod.clone`).
   - Monitoring: `RANK.monitoring = 1.5`, `SECTION`/`SECTION_STATUS` entries for `1.5`, and in `render` the `agents()` list mapped to `status: "monitoring"` for addresses whose `terminals()` entry matches (`monitoring(k)`: a `done`/`idle` agent with a `records` entry still `working`, or a `working` one whose `report.msg` matches `/still running/i`, or a `done`/`idle` one marked `busy`); `kidStatus` does the same for sub-agents without a pane. `t` is `{ ...theme(), monitoring: "#89dceb" }`, so `t[status]` colors headers and fold counts; `status()` draws the spinner for it.
   - In `init`, one `cx.spawn` task loops on `nextCommand()` and handles `"close"` with `closePane()`.
-- **The layout**: the `agents` block of the person's personal layout gets `content: {mod: "smart-agents"}` instead of `agents`. On one of Herdr's own layouts, clone it first (`layout.clone`).
+- **The layout**: the `agents` block of the person's personal layout gets `content: {mod: "agents-plus"}` instead of `agents`. On one of Herdr's own layouts, clone it first (`layout.clone`).
 - **`keys.json`**: the table above, merged into the person's keys.
 
 ## Watch out
@@ -59,7 +59,7 @@ Herdr's agents list, smarter. Right-click any agent to open, pin, rename or clos
 
 ## Done when
 
-- `herdr-app check mods/smart-agents` passes and `herdr-app status` shows no errors.
+- `herdr-app check mods/agents-plus` passes and `herdr-app status` shows no errors.
 - The agents list looks and sorts as before; its sort popup still works.
 - A Claude Code agent whose turn ended with a background shell still running (`hc get <t>` shows `done` with a `records` entry in state `working`) sits under Monitoring with a sky-blue spinner; it returns to Idle when the shell finishes.
 - An OpenCode agent asked to run `sleep 90` in the background and wait ends its turn (`hc get <t>` says `idle`) and sits under Monitoring within 5 s while `sleep` runs; it returns to Idle within 5 s of `sleep` ending.

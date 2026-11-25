@@ -244,7 +244,7 @@ export default class Agents extends View {
 
   // Right-click on an agent: like the spaces menu. Close ends the agent's pane, or a sub-agent's terminal.
   menu(address) {
-    openOverlay({ mod: "smart-agents", kind: "popup", width: 200, height: 160, props: { agentMenu: address } });
+    openOverlay({ mod: "agents-plus", kind: "popup", width: 200, height: 160, props: { agentMenu: address } });
   }
 
   agentMenu(t) {
@@ -561,7 +561,7 @@ export default class Agents extends View {
                 .text_size(11)
                 .text_color(t.dim)
                 .hover((s) => s.text_color(t.foreground))
-                .on_click(() => openOverlay({ mod: "smart-agents", kind: "popup", width: 200, height: 140, props: { sortMenu: true } }))
+                .on_click(() => openOverlay({ mod: "agents-plus", kind: "popup", width: 200, height: 140, props: { sortMenu: true } }))
                 .tooltip(`Sort agents: ${sort.label}`)
                 .child(svg(`mods/workspace-chrome/${sort.icon}.svg`).size(14)),
             ),
